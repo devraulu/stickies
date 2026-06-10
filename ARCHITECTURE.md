@@ -1,0 +1,12 @@
+# Architecture
+
+Our `Board` component holds most of the logic for the sticky notes, we create a `div` the same size of the viewport with relative positioning as our notes will be `absolute`ly positioned inside this container.
+We declare a `Note` type that represents a note on the board and tracks its position (x, y, z), size (w, h), content and color. We keep a collection of these notes in state and use a `mutateNotes` that receives an updater fn and applies it via a functional `setNotes` updater, allowing us to reuse it for different purposes (update, bring to front, delete, etc). A `useEffect` watching `notes` handles persistence: it sets the sync indicator to "saving" and calls a debounced save (via `useDebouncedCallback`) that writes to `localStorage` and the mock API, setting the indicator back to "saved" on completion.
+
+To create a note we use a `createNote` function that increments the `z` counter (a ref to avoid re-renders) and updates the state with the new note and with the user selection from our predefined values of color and size using our `NoteForm` component, the UI for this is simple
+
+To render the notes we use a `textarea` a component that allows us content editing and resize by default, we could've used any other input/component with the `resize` property but [it isn't baseline yet](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/resize#browser_compatibility). However, in order to track the changes in size we have to make use of event listeners and [`ResizeObserver`](https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver), each instance of `StickyNote` has its own `ResizeObserver` created once on mount (empty deps), which avoids an infinite loop where each re-render would recreate the observer, which would fire, trigger a state update, and re-render again. It also keeps track of the dragging with a combination of `mousedown` `mousemove` and `mouseup`. We use some Tailwind utility classes to make it look like a sticky note, add some shadows and border to make any overlap easier to distinguish and pick colors with proper contrast.
+
+Finally, for the trash zone we use a fixed `div` to the right of the board that appears whenever we're dragging any of the stickies (thanks to Context API) and compare the bounds to determine if the user dragged a sticky note inside of it.
+
+We could've used a gesture and animation library like `motion` or `react-spring` to provide a better user experience, but keeping things simple and avoiding ready-made solutions is the point of this test.
